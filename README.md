@@ -32,6 +32,8 @@ node --env-file=/absolute/path/outside-checkout/pa-rtos-private/private.env src/
 
 默认设备接口在 `127.0.0.1:19870`，内部 OpenClaw 在 `127.0.0.1:19871`。远程设备可直接通过「公网 IP＋独立 HTTPS 端口」连接，不要求域名或改动现有 nginx。设置 `PA_TLS_CERT`、`PA_TLS_KEY` 后可将 `PA_HOST` 改为 `0.0.0.0`；设备需信任对应证书。不能直接暴露内部 Gateway。
 
+服务器也可直接在已登录的 Workbench Shell 中运行 [安装脚本](cloud/deploy/install.sh)，无需公网 SSH。安装后自动验收并生成给设备使用的私有 `connection.json`，步骤见 [部署说明](spec/deployment.md#在-workbench-部署无需公网-ssh)。
+
 ## 验证记录
 
 2026-11-04，在隔离的 Mac 工作区通过 8 项自动测试，并使用真实自定义模型服务完成 OpenClaw 启动、中文对话、文件工具调用、多轮接续、消息重试去重、重启后回执与会话恢复。另已验证 IP SAN 证书的 HTTPS 接入：显式信任后成功，未信任时拒绝连接。服务器部署和 RTOS 样机仍需分别验收。

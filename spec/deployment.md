@@ -15,14 +15,34 @@
 
 示例 unit 在 `cloud/deploy/pa-rtos.service`，对本项目设置独立 CPU、内存限额。`ProtectSystem=strict`、`ProtectHome=true`、`PrivateTmp=true` 将正常文件写入限制在本项目私有目录和临时目录。若宿主已有同名目录或账号，先核对，不能直接复用或覆盖。
 
+## 在 Workbench 部署，无需公网 SSH
+
+在已经登录第二台实例的 Workbench Shell 中执行。以下均为示例地址，替换成实际服务器 IP、模型地址和模型 ID：
+
+```sh
+git clone --depth 1 https://github.com/Xiamu-ssr/PA-RTOS.git /opt/pa-rtos
+bash /opt/pa-rtos/cloud/deploy/install.sh \
+  203.0.113.10 https://models.example.com/v1 your-model-id openai-completions
+```
+
+脚本适用于 Linux x86_64 / systemd 主机。先检查专用路径、账号、端口及资源余量；存在冲突就停止。随后下载并校验固定版本 Node，安装依赖、运行测试、生成 IP 证书，最后创建并启动独立 PA 服务。不会安装系统软件包、替换全局 Node、修改 SSH、nginx、防火墙或 ECS 安全组。
+
+出现 `Model API key (hidden input)` 时粘贴模型 Key 并回车，终端不会回显。Key 经标准输入写入服务器私有配置，不进入命令行参数或 Git。该脚本面向全新安装；中途失败后先检查已完成步骤，不要覆盖目录强行重装。
+
+安装末尾会用真正的 OpenClaw 回合验证本机 HTTPS、设备认证和模型回复；通过后生成 `/var/lib/pa-rtos/connection.json`。通过 Workbench 文件管理下载此文件交给设备开发者；它仅包含 PA 地址、设备 token 和公钥证书，不含模型 Key 或 Gateway 管理令牌。文件包含设备凭据，应私下交付。
+
+若设备通过公网接入，还需要单独放行 **PA 的 TCP 19870**（或实际配置端口）；公网 SSH 22 与内部 Gateway 19871 均无需放行。成功生成连接文件只代表服务器本机验收通过，公网及样机还需实际测试。
+
 ## 初始化与模型
 
 在独立账号下安装锁定依赖，使用私有空目录执行初始化：
 
+手动初始化应在首次安装依赖之前进行，避免 npm 缓存提前占用私有空目录。
+
 ```sh
 cd /opt/pa-rtos/cloud
-PATH=/opt/pa-rtos-node/bin:$PATH npm ci
 /opt/pa-rtos-node/bin/node src/init.mjs --root /var/lib/pa-rtos
+PATH=/opt/pa-rtos-node/bin:$PATH npm ci
 ```
 
 编辑 `/var/lib/pa-rtos/private.env`：

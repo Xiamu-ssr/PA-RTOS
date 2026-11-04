@@ -10,6 +10,14 @@
 
 模型服务 Key、OpenClaw 管理令牌、完整记忆及工具循环均由 Cloud 管理。
 
+Workbench 安装并完成服务器本机验收后，会生成私有 `connection.json`：
+
+```json
+{"protocol":1,"baseUrl":"https://203.0.113.10:19870","deviceId":"xide-rtos","deviceToken":"<private-device-token>","caCertificatePem":"<PEM certificate>"}
+```
+
+希德从这个文件取地址、token 和证书即可；不用安装 OpenClaw，也不需要 SSH 登录服务器。在 ESP-IDF 中用 `esp_http_client` 发 HTTPS / JSON 请求，将公钥证书配置到 `cert_pem`，每次请求加设备 token。硬件首轮先接下面的三个业务接口；录音和低功耗推送待硬件规格确认后再接。
+
 ## 当前 HTTP 接口
 
 以下路径属于本项目 cloud 接入层。内部 OpenClaw 使用原生 `POST /v1/chat/completions` 执行完整 Agent 回合，不只是转发一次模型请求。
