@@ -6,4 +6,3 @@
 - Keep private runtime data outside this checkout. Examples use reserved example domains and synthetic credentials.
 - `spec/rtos-connection.md` describes this project's implemented connection. The inherited Doudou specs are references, not shipped PA-RTOS features.
 - Before deployment, inspect the selected host. Add only this project's files, account, service and ports; preserve other services and their configuration.
-

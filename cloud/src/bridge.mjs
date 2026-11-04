@@ -124,4 +124,3 @@ export function createBridge({config, devices, jobs, request = fetch, tls}) {
     while (pumping) await new Promise(resolve => setTimeout(resolve, 20));
   }};
 }
-

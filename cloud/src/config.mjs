@@ -68,4 +68,3 @@ export function openClawConfig(c) {
     discovery: {mdns: {mode: 'off'}}, update: {checkOnStart: false}, logging: {level: 'warn'},
   };
 }
-

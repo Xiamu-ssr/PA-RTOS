@@ -52,4 +52,3 @@ try {
     console.log(`PA-RTOS ready on ${tls ? 'https' : 'http'}://${c.host}:${c.port}; OpenClaw ${OPENCLAW_VERSION} stays on loopback.`);
   }
 } catch { console.error('PA-RTOS startup failed; inspect private configuration and Gateway logs.'); await stop(1); }
-
