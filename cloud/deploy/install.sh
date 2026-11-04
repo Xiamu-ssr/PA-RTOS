@@ -17,9 +17,10 @@ test "$(id -u)" = 0
 test "$(uname -s)" = Linux
 test "$(uname -m)" = x86_64
 test "$source_root" = /opt/pa-rtos
-for command in python3 curl tar openssl sha256sum ss systemctl useradd runuser; do
+for command in python3 tar xz openssl sha256sum ss systemctl useradd runuser; do
   command -v "$command" >/dev/null || { printf 'Missing command: %s\n' "$command" >&2; exit 1; }
 done
+if [ -z "${PA_NODE_ARCHIVE:-}" ]; then command -v curl >/dev/null; fi
 test ! -e "$runtime"
 test ! -e "$state"
 test ! -e /etc/systemd/system/pa-rtos.service
@@ -46,8 +47,12 @@ PY
 stage=$(mktemp -d /tmp/pa-rtos-install.XXXXXXXX)
 trap 'rm -rf -- "$stage"' EXIT
 node_archive=node-v26.12.1-linux-x64.tar.xz
-curl --fail --location --show-error --retry 2 --connect-timeout 15 --max-time 300 \
-  "https://nodejs.org/dist/v26.12.1/$node_archive" -o "$stage/$node_archive"
+if [ -n "${PA_NODE_ARCHIVE:-}" ]; then
+  cp -- "$PA_NODE_ARCHIVE" "$stage/$node_archive"
+else
+  curl --fail --location --show-error --retry 2 --connect-timeout 15 --max-time 300 \
+    "https://nodejs.org/dist/v26.12.1/$node_archive" -o "$stage/$node_archive"
+fi
 printf '%s  %s\n' 6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd "$stage/$node_archive" | sha256sum --check
 install -d -m 0755 "$runtime"
 tar -xJf "$stage/$node_archive" -C "$runtime" --strip-components=1

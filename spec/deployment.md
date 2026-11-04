@@ -27,6 +27,8 @@ bash /opt/pa-rtos/cloud/deploy/install.sh \
 
 脚本适用于 Linux x86_64 / systemd 主机。先检查专用路径、账号、端口及资源余量；存在冲突就停止。随后下载并校验固定版本 Node，安装依赖、运行测试、生成 IP 证书，最后创建并启动独立 PA 服务。不会安装系统软件包、替换全局 Node、修改 SSH、nginx、防火墙或 ECS 安全组。
 
+服务器访问 GitHub 失败时，可从能联网的开发电脑打包源码，通过 Workbench 文件管理上传，不需要开放 SSH。Node 安装包也可一起上传：设置 `PA_NODE_ARCHIVE` 为 `node-v26.12.1-linux-x64.tar.xz` 的绝对路径即可复用本地包，仍会核对同一官方 SHA-256。此方式只免去源码和 Node 的在线下载；`npm ci` 仍需访问锁文件中的 npm 下载地址。
+
 出现 `Model API key (hidden input)` 时粘贴模型 Key 并回车，终端不会回显。Key 经标准输入写入服务器私有配置，不进入命令行参数或 Git。该脚本面向全新安装；中途失败后先检查已完成步骤，不要覆盖目录强行重装。
 
 安装末尾会用真正的 OpenClaw 回合验证本机 HTTPS、设备认证和模型回复；通过后生成 `/var/lib/pa-rtos/connection.json`。通过 Workbench 文件管理下载此文件交给设备开发者；它仅包含 PA 地址、设备 token 和公钥证书，不含模型 Key 或 Gateway 管理令牌。文件包含设备凭据，应私下交付。
