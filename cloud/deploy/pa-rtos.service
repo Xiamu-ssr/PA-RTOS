@@ -1,0 +1,28 @@
+[Unit]
+Description=PA-RTOS cloud connector and OpenClaw
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pa-rtos
+Group=pa-rtos
+WorkingDirectory=/opt/pa-rtos/cloud
+EnvironmentFile=/var/lib/pa-rtos/private.env
+ExecStart=/opt/pa-rtos-node/bin/node /opt/pa-rtos/cloud/src/main.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/pa-rtos
+CPUQuota=100%
+MemoryMax=2G
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target
