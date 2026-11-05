@@ -64,6 +64,7 @@ runuser -u pa-rtos -- "$runtime/bin/node" src/init.mjs --root "$state"
 chown -R pa-rtos:pa-rtos "$source_root/cloud"
 runuser -u pa-rtos -- env PATH="$runtime/bin:$PATH" npm ci --omit=dev --no-audit --no-fund
 chown -R root:root "$source_root"
+chmod -R a+rX "$source_root"
 runuser -u pa-rtos -- "$runtime/bin/node" --test test/bridge.test.mjs
 printf 'Model API key (hidden input): ' >/dev/tty
 IFS= read -r -s model_key </dev/tty
