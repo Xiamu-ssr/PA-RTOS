@@ -66,6 +66,59 @@ test('retries of the same request do not rerun tools and an ID cannot acquire di
   assert.equal(calls, 1);
 });
 
+test('a full queue refuses concurrent new work while existing receipts and retries still work', async t => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const f = await fixture(t, async () => {
+    await gate;
+    return Response.json({choices: [{message: {content: 'done'}}]});
+  });
+  const messages = Array.from({length: 10}, (_, i) => ({id: `pending-${i}`, text: 'queued work'}));
+  let admitted, refused;
+  try {
+    const responses = await Promise.all(messages.map(body => f.call('/api/messages', body)));
+    admitted = messages.filter((_, i) => responses[i].status === 202);
+    assert.equal(admitted.length, 8);
+    assert.equal(responses.filter(r => r.status === 429).length, 2);
+    const [accepted] = admitted;
+    refused = messages[responses.findIndex(r => r.status === 429)];
+    assert.equal(f.jobs.get('handheld', refused.id), undefined);
+    assert.equal((await f.call('/api/messages', accepted)).status, 202);
+    assert.equal((await f.call('/api/messages', {...accepted, text: 'different'})).status, 409);
+    assert.equal((await f.call('/api/messages/' + accepted.id)).status, 200);
+  } finally {
+    release();
+  }
+  for (const body of admitted) assert.equal((await settled(f.call, body.id)).status, 'done');
+  assert.equal((await f.call('/api/messages', refused)).status, 202);
+});
+
+test('new-message limits apply per device and expire without deleting receipts', async t => {
+  const f = await fixture(t, async () => Response.json({choices: [{message: {content: 'done'}}]}));
+  for (let i = 0; i < 12; i++) {
+    const row = f.jobs.add('handheld', `complete-${i}`, 'recent work');
+    f.jobs.finish(row, 'done', 'saved');
+  }
+  const body = {id: 'limited-01', text: 'next message'};
+  const rejected = await f.call('/api/messages', body);
+  assert.equal(rejected.status, 429);
+  assert(Number(rejected.headers.get('retry-after')) > 0);
+  assert.equal((await f.call('/api/messages', body, devices[1].token)).status, 202);
+  f.jobs.db.prepare('UPDATE messages SET created = ? WHERE device = ?').run(Date.now() - 61_000, 'handheld');
+  assert.equal((await (await f.call('/api/messages/complete-0')).json()).text, 'saved');
+  assert.equal((await f.call('/api/messages', body)).status, 202);
+});
+
+test('unauthenticated requests are limited by the actual socket peer', async t => {
+  const f = await fixture(t, async () => { throw new Error('Unexpected model request'); });
+  for (let i = 0; i < 61; i++) {
+    const response = await fetch(f.url + '/api/config', {headers: {'x-forwarded-for': `198.51.100.${i + 1}`}});
+    assert.equal(response.status, i < 60 ? 401 : 429);
+    if (i === 60) assert(Number(response.headers.get('retry-after')) > 0);
+    await response.json();
+  }
+});
+
 test('uncertain Gateway outcomes stay uncertain across retries and do not leak upstream errors or credentials', async t => {
   let calls = 0;
   const f = await fixture(t, async () => { calls++; throw new Error('private transport detail ' + gatewayToken); });

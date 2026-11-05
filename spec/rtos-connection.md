@@ -16,6 +16,8 @@ Workbench 安装并完成服务器本机验收后，会生成私有 `connection.
 {"protocol":1,"baseUrl":"https://203.0.113.10:19870","deviceId":"xide-rtos","deviceToken":"<private-device-token>","caCertificatePem":"<PEM certificate>"}
 ```
 
+部署初始化时用 32 字节随机数生成设备令牌，保存在服务器私有的 `devices.json`。联调时通过 `connection.json` 私下发给设备开发者。更换设备令牌后，重启服务以加载新凭据，再重新导出连接文件。
+
 希德从这个文件取地址、token 和证书即可；不用安装 OpenClaw，也不需要 SSH 登录服务器。在 ESP-IDF 中用 `esp_http_client` 发 HTTPS / JSON 请求，将公钥证书配置到 `cert_pem`，每次请求加设备 token。硬件首轮先接下面的三个业务接口；录音和低功耗推送待硬件规格确认后再接。
 
 ## 当前 HTTP 接口
@@ -69,6 +71,12 @@ Workbench 安装并完成服务器本机验收后，会生成私有 `connection.
 如果传输失败、执行超时或 Cloud 在处理期间重启，返回 `outcome_unknown`。它表示无法确认执行结果，底层 Agent 可能仍在执行或已经完成；同 ID 不会自动重跑。设备显示“结果待确认”，不要自动生成新 ID 重复交办。SQLite 回执与 OpenClaw 状态应一起保留。
 
 设备 token 只访问对应设备的消息回执；实验 PA 的对话上下文本身是共享的。换设备继续对话会进入同一主会话。Cloud 固定路由，客户端不能指定 Agent、会话、工具或系统提示词。
+
+## 请求限额
+
+接入层按实际 TCP 来源计数，每 10 秒最多接受同一来源的 60 次请求。每台设备一分钟最多提交 12 条新消息。全局最多同时保留 8 条排队或运行中的消息。重复提交已经保存的 ID 时会返回原回执，仍计入来源请求频率。
+
+达到限额时返回 HTTP 429，`Retry-After` 表示至少等待的秒数。掌机等待后用同一 ID 和原文重试，或继续查询该 ID 的结果。一次文字交互只需维护一个待确认的消息 ID。
 
 ## 哪些数据现在需要对接
 
