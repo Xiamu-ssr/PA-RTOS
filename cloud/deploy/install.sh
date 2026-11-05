@@ -63,22 +63,4 @@ cd "$source_root/cloud"
 runuser -u pa-rtos -- "$runtime/bin/node" src/init.mjs --root "$state"
 chown -R pa-rtos:pa-rtos "$source_root/cloud"
 runuser -u pa-rtos -- env PATH="$runtime/bin:$PATH" npm ci --omit=dev --no-audit --no-fund
-chown -R root:root "$source_root"
-chmod -R a+rX "$source_root"
-runuser -u pa-rtos -- "$runtime/bin/node" --test test/bridge.test.mjs
-printf 'Model API key (hidden input): ' >/dev/tty
-IFS= read -r -s model_key </dev/tty
-printf '\n' >/dev/tty
-test -n "$model_key"
-printf '%s' "$model_key" | runuser -u pa-rtos -- "$runtime/bin/node" deploy/configure.mjs \
-  "$state" "$public_ip" "$model_base" "$model_id" "$model_api"
-unset model_key
-runuser -u pa-rtos -- openssl req -x509 -newkey rsa:2048 -sha256 -days 90 -nodes \
-  -subj "/CN=$public_ip" -addext "subjectAltName=IP:$public_ip,IP:127.0.0.1" \
-  -keyout "$state/server.key" -out "$state/server.pem" 2>"$state/certificate-creation.log"
-install -m 0644 deploy/pa-rtos.service /etc/systemd/system/pa-rtos.service
-systemctl daemon-reload
-systemctl enable --now pa-rtos.service
-runuser -u pa-rtos -- "$runtime/bin/node" deploy/verify.mjs "$state" "$public_ip"
-printf '\nPA installed. Device connection file: %s/connection.json\n' "$state"
-printf 'The installer does not change SSH, nginx, host firewall or ECS security groups.\n'
+bash deploy/activate.sh "$public_ip" "$model_base" "$model_id" "$model_api"

@@ -31,6 +31,8 @@ bash /opt/pa-rtos/cloud/deploy/install.sh \
 
 出现 `Model API key (hidden input)` 时粘贴模型 Key 并回车，终端不会回显。Key 经标准输入写入服务器私有配置，不进入命令行参数或 Git。该脚本面向全新安装；中途失败后先检查已完成步骤，不要覆盖目录强行重装。
 
+如果源码、独立 Node、npm 依赖和私有目录已经就位，而 `systemctl show pa-rtos.service -p LoadState` 仍为 `not-found`，更新源码后可用同样的四个参数执行 `bash /opt/pa-rtos/cloud/deploy/activate.sh ...`，从注册服务前继续。此步骤验证服务账号能读取 OpenClaw，运行测试，配置模型与证书，再启动服务和验收；保留已有设备凭据及工作区。已注册服务时会停止，应检查服务状态和日志。不要重新执行初始化。
+
 安装末尾会用真正的 OpenClaw 回合验证本机 HTTPS、设备认证和模型回复；通过后生成 `/var/lib/pa-rtos/connection.json`。通过 Workbench 文件管理下载此文件交给设备开发者；它仅包含 PA 地址、设备 token 和公钥证书，不含模型 Key 或 Gateway 管理令牌。文件包含设备凭据，应私下交付。
 
 若设备通过公网接入，还需要单独放行 **PA 的 TCP 19870**（或实际配置端口）；公网 SSH 22 与内部 Gateway 19871 均无需放行。成功生成连接文件只代表服务器本机验收通过，公网及样机还需实际测试。
